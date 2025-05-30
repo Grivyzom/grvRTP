@@ -1,0 +1,32 @@
+min-range: 150
+max-range: 20000
+center-x: 0
+center-z: 0
+
+
+# ----- Centros por mundo (se llena automáticamente) -----
+centers: {}      #  <nombreMundo>:
+                 #    x: <int>
+                 #    z: <int>
+
+# ------------------ Mundos -----------------
+worlds:
+  mode: blacklist   # o 'whitelist'
+  list:
+    - world_the_end
+    - world_nether
+
+# ------------------ Mensajes ---------------
+messages:
+  no-permission: "&cNo tienes permiso para usar este comando."
+  no-permission-others: "&cNo puedes teletransportar a otros jugadores."
+  player-only: "&cSolo un jugador puede ejecutar este comando."
+  usage: "&cUso: /rtp [jugador] <rango> [mundo]"
+  invalid-arg: "&cArgumento inválido: %arg%"
+  range-error: "&cEl rango debe ser un número entre %min% y %max%."
+  world-restricted: "&cNo puedes usar RTP en el mundo &f%world%."
+  teleport-success: "&aTeletransportado a &f%loc% &aen &f%world%"
+  teleport-other: "&aEl jugador &f%player% &afue teletransportado."
+  center-success: "&aTeletransportado al centro de &f%world%."
+  center-other: "&aEl jugador &f%player% &afue enviado al centro de &f%world%."
+  setcenter-success: "&aCentro de &f%world% &aestablecido en &f%loc%."

@@ -1,0 +1,47 @@
+name: GrvRTP
+main: gc.grivyzom.GrvRTP
+version: 1.1
+api-version: 1.20
+commands:
+  rtp:
+    description: Teletransporte aleatorio
+    usage: /rtp [jugador] <rango> [mundo]
+    permission: grvrtp.use
+    permission-message: "&cNo tienes permiso."
+  grvrtp:
+    description: Comandos administrativos y ayuda de GrvRTP
+    usage: |
+      /grvrtp help [página] - Muestra la ayuda
+      /grvrtp reload - Recarga la configuración
+    permission: grvrtp.use
+  centro:
+    description: Teletransporta al centro de un mundo
+    aliases: [center]
+    usage: /centro [mundo] [jugador]
+    permission: grvrtp.center
+  setcenter:
+    description: Define el centro del mundo actual
+    usage: /setcenter
+    permission: grvrtp.setcenter
+permissions:
+  grvrtp.use:
+    description: Usar /rtp sobre uno mismo y acceder a la ayuda
+    default: true
+  grvrtp.use.others:
+    description: Teletransportar a otros
+    default: op
+  grvrtp.bypass.world:
+    description: Ignorar blacklist/whitelist
+    default: op
+  grvrtp.admin:
+    description: Recargar la configuración
+    default: op
+  grvrtp.center:
+    description: Usar /centro sobre uno mismo
+    default: true
+  grvrtp.center.others:
+    description: Teletransportar a otros con /centro
+    default: op
+  grvrtp.setcenter:
+    description: Establecer el centro de un mundo
+    default: op
