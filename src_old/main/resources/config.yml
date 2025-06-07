@@ -21,6 +21,57 @@ centers: {}
 #     x: 0
 #     z: 0
 
+# ===============================================
+#              SEGURIDAD DE BLOQUES
+# ===============================================
+# Lista de bloques donde NO se puede aparecer
+# El jugador no aparecerá sobre estos bloques ni en ellos
+banned-blocks:
+  - WATER
+  - LAVA
+  - CACTUS
+  - MAGMA_BLOCK
+  - CAMPFIRE
+  - SOUL_CAMPFIRE
+  - FIRE
+  - SOUL_FIRE
+  - SWEET_BERRY_BUSH
+  - WITHER_ROSE
+  - POINTED_DRIPSTONE
+  - POWDER_SNOW
+  - COBWEB
+  - BEDROCK
+  - BARRIER
+  - VOID_AIR
+  - CAVE_AIR
+  - END_PORTAL
+  - NETHER_PORTAL
+  - STRUCTURE_VOID
+
+# Lista de bloques considerados seguros para aparecer encima
+# Si está vacía, se consideran seguros todos los bloques sólidos excepto los banned-blocks
+safe-blocks:
+  - GRASS_BLOCK
+  - DIRT
+  - STONE
+  - COBBLESTONE
+  - SAND
+  - GRAVEL
+  - OAK_LOG
+  - BIRCH_LOG
+  - SPRUCE_LOG
+  - JUNGLE_LOG
+  - ACACIA_LOG
+  - DARK_OAK_LOG
+  - MANGROVE_LOG
+  - CHERRY_LOG
+  - NETHERRACK
+  - BLACKSTONE
+  - BASALT
+
+# ===============================================
+#              RTP GRATIS
+# ===============================================
 free-rtp:
   enabled: true
   world: "world"
@@ -29,6 +80,30 @@ free-rtp:
   min-z: -1000
   max-z: 1000
 
+# ===============================================
+#     CONFIGURACIÓN DEL SISTEMA DE TELEPORTE
+# ===============================================
+teleport:
+  # Número máximo de intentos para encontrar una ubicación segura
+  max-attempts: 50
+
+  # Altura mínima y máxima para el teletransporte
+  min-y: 64
+  max-y: 256
+
+  # Verificación de seguridad adicional
+  safety:
+    # Verificar que haya al menos 2 bloques de aire encima del punto de spawn
+    check-air-above: true
+
+    # Verificar que no haya bloques peligrosos en un radio de 1 bloque
+    check-surrounding: true
+
+    # Evitar spawn en cuevas (verificar luz natural)
+    avoid-caves: true
+
+    # Nivel mínimo de luz requerido (0-15, -1 para desactivar)
+    min-light-level: 8
 
 # ===============================================
 #            SISTEMA DE ECONOMÍA
@@ -42,7 +117,7 @@ economy:
     # Comando /rtp
     rtp:
       # Tipo de moneda: 'money', 'experience', o 'both'
-      currency-type: money
+      currency-type: experience
 
       # Configuración para dinero (requiere Vault + plugin de economía)
       money:
@@ -120,6 +195,10 @@ messages:
   # Mensajes de teletransporte
   teleport-success: "&aTeletransportado a &f%loc% &aen &f%world%"
   teleport-other: "&aEl jugador &f%player% &afue teletransportado."
+  teleport-failed: "&cNo se pudo encontrar una ubicación segura después de %attempts% intentos."
+
+  # Mensajes de seguridad
+  unsafe-location: "&cLa ubicación encontrada no es segura. Reintentando..."
 
   # Mensajes de centro
   center-success: "&aTeletransportado al centro de &f%world% &a(&f%loc%&a)."
@@ -140,6 +219,7 @@ messages:
   econ-charged-both: "&aSe te han descontado &f$%money% &ay &f%exp% niveles de XP&a."
   econ-cost-info-both: "&eEste comando costará &f$%money% &ey &f%exp% niveles de XP&e."
 
+  # Mensajes de RTP gratis
   free-rtp-used: "¡Has usado tu RTP gratis!"
   free-rtp-wrong-world: "No puedes usar el RTP gratis en este mundo. Mundo permitido: %world%"
   free-rtp-enabled: "&aHas activado tu RTP gratis."

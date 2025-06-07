@@ -23,14 +23,6 @@ commands:
     description: Define el centro del mundo actual
     usage: /setcenter
     permission: grvrtp.setcenter
-  rtpgratis:
-    description: Gestiona tu RTP gratis
-    usage: |
-      /rtpgratis enable - Activa tu RTP gratis
-      /rtpgratis disable - Desactiva tu RTP gratis
-      /rtpgratis setworld <mundo> - Establece el mundo permitido
-      /rtpgratis info - Muestra tu estado de RTP gratis
-    permission: grvrtp.use
 permissions:
   grvrtp.use:
     description: Usar /rtp sobre uno mismo y acceder a la ayuda
@@ -53,4 +45,3 @@ permissions:
   grvrtp.setcenter:
     description: Establecer el centro de un mundo
     default: op
-softdepend: [Vault]

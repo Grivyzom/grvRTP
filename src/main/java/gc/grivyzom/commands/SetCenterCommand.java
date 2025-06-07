@@ -3,40 +3,49 @@ package gc.grivyzom.commands;
 import gc.grivyzom.center.CenterService;
 import gc.grivyzom.util.MessageUtil;
 import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.command.*;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class SetCenterCommand implements CommandExecutor {
 
-    private final CenterService centers;
-    private final MessageUtil    msg;
+    private final CenterService centerService;
+    private final MessageUtil msgUtil;
 
-    public SetCenterCommand(CenterService centers, MessageUtil msg){
-        this.centers = centers;
-        this.msg     = msg;
+    public SetCenterCommand(CenterService centerService, MessageUtil msgUtil) {
+        this.centerService = centerService;
+        this.msgUtil = msgUtil;
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String lbl, String[] args) {
+    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
-        if(!(sender instanceof Player p)){
-            sender.sendMessage(msg.msg("player-only"));
-            return true;
-        }
-        if(!p.hasPermission("grvrtp.setcenter")){
-            p.sendMessage(msg.msg("no-permission"));
+        // Verificar que sea un jugador
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(msgUtil.msg("player-only"));
             return true;
         }
 
-        World    w   = p.getWorld();
-        Location loc = p.getLocation();
+        Player player = (Player) sender;
 
-        centers.setCenter(w, loc);
+        // Verificar permiso
+        if (!player.hasPermission("grvrtp.setcenter")) {
+            player.sendMessage(msgUtil.msg("no-permission"));
+            return true;
+        }
 
+        // Obtener ubicación actual del jugador
+        Location loc = player.getLocation();
+
+        // Establecer el centro para el mundo actual
+        centerService.setCenter(loc.getWorld(), loc);
+
+        // Mensaje de confirmación
         String locStr = loc.getBlockX() + ", " + loc.getBlockZ();
-        p.sendMessage(msg.format("setcenter-success",
-                new String[][]{{"%loc%", locStr}, {"%world%", w.getName()}}));
+        player.sendMessage(msgUtil.format("setcenter-success",
+                new String[][]{{"%world%", loc.getWorld().getName()}, {"%loc%", locStr}}));
+
         return true;
     }
 }

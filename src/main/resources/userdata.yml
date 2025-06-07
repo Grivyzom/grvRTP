@@ -1,0 +1,9 @@
+players:
+  uuid-1:
+    usedFreeRtp: true
+    freeRtpEnabled: true
+    freeRtpWorld: "world"
+  uuid-2:
+    usedFreeRtp: false
+    freeRtpEnabled: false
+    freeRtpWorld: "custom_world"

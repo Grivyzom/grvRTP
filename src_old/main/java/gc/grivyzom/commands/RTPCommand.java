@@ -1,8 +1,6 @@
 package gc.grivyzom.commands;
 
 import gc.grivyzom.GrvRTP;
-import gc.grivyzom.economy.EconomyService;
-import gc.grivyzom.rtp.PlayerRTPDataManager;
 import gc.grivyzom.teleport.RandomTeleportService;
 import gc.grivyzom.util.MessageUtil;
 import org.bukkit.*;
@@ -10,24 +8,23 @@ import org.bukkit.command.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import java.util.List;
-import java.util.UUID;
 
 public class RTPCommand implements CommandExecutor {
 
     private final GrvRTP plugin;
     private final MessageUtil msg;
-    private final EconomyService economyService;
-    private final RandomTeleportService tpService = new RandomTeleportService();
+    private final RandomTeleportService tpService;
     private final int globalMin;
     private final int globalMax;
 
-    public RTPCommand(GrvRTP plugin, EconomyService economyService){
+    public RTPCommand(GrvRTP plugin){
         this.plugin = plugin;
-        this.economyService = economyService;
         FileConfiguration cfg = plugin.getConfig();
+        // Usa 150-20000 si están ausentes
         this.globalMin = Math.max(cfg.getInt("min-range",150), 1);
         this.globalMax = Math.max(cfg.getInt("max-range",20000), globalMin+1);
         this.msg = new MessageUtil(cfg);
+        this.tpService = new RandomTeleportService(cfg);
     }
 
     @Override
@@ -47,25 +44,18 @@ public class RTPCommand implements CommandExecutor {
             // ---------- Argumentos ----------
             switch (args.length){
                 case 0 -> {            // /rtp (sin argumentos)
-                    if (!(sender instanceof Player)) {
-                        sender.sendMessage(msg.msg("player-only"));
-                        return true;
-                    }
                     checkPlayer(sender);
                     target = (Player) sender;
-                    world = target.getWorld();
                     range = globalMax;
+                    world = target.getWorld();
                 }
                 case 1 -> {
+                    // Si es número → rango propio; si es nombre de jugador → teleportar con rango por defecto (globalMax)
                     if(isNumeric(args[0])){
-                        checkPlayer(sender);
+                        checkPlayer(sender);                 // asegura que el ejecutor sea jugador
                         target = (Player) sender;
                         range  = parseRange(args[0]);
                         world  = target.getWorld();
-                        if (!(sender instanceof Player)) {
-                            sender.sendMessage(msg.msg("player-only"));
-                            return true;
-                        }
                     }else{
                         checkPermission(sender, "grvrtp.use.others");
                         target = getPlayer(args[0]);
@@ -74,17 +64,21 @@ public class RTPCommand implements CommandExecutor {
                     }
                 }
                 case 2 -> {
-                    if(isNumeric(args[1])){                 // a)
+                    // 3 combinaciones posibles:
+                    // a) <player> <rango>
+                    // b) <player> <world>
+                    // c) <rango>  <world>
+                    if(isNumeric(args[1])){                 // [a]
                         checkPermission(sender, "grvrtp.use.others");
                         target = getPlayer(args[0]);
                         range  = parseRange(args[1]);
                         world  = target.getWorld();
-                    }else if(isNumeric(args[0])){           // c)
+                    }else if(isNumeric(args[0])){           // [c]
                         checkPlayer(sender);
                         target = (Player) sender;
                         range  = parseRange(args[0]);
                         world  = getWorld(args[1]);
-                    }else{                                  // b)
+                    }else{                                  // [b]
                         checkPermission(sender, "grvrtp.use.others");
                         target = getPlayer(args[0]);
                         range  = globalMax;
@@ -100,84 +94,31 @@ public class RTPCommand implements CommandExecutor {
                 default -> { sender.sendMessage(msg.msg("usage")); return true; }
             }
 
-            // Get player data before world restriction check
-            UUID uuid = target.getUniqueId();
-            PlayerRTPDataManager dataManager = plugin.playerRTPDataManager;
-
-            // 2. Restricción de mundo modificada:
-            if (!(dataManager.isFreeRtpEnabled(uuid) && !dataManager.hasUsedFreeRtp(uuid))) {
-                if(!isWorldAllowed(world) && !sender.hasPermission("grvrtp.bypass.world")){
-                    sender.sendMessage(msg.format("world-restricted",
-                            new String[][]{{"%world%", world.getName()}}));
-                    return true;
-                }
+            // ------- Restricción de mundo -------
+            if(!isWorldAllowed(world) && !sender.hasPermission("grvrtp.bypass.world")){
+                sender.sendMessage(msg.format("world-restricted",
+                        new String[][]{{"%world%", world.getName()}}));
+                return true;
             }
 
-            if (sender.equals(target)) {
-                if (dataManager.isFreeRtpEnabled(uuid) && !dataManager.hasUsedFreeRtp(uuid)) {
-                    String allowedWorld = dataManager.getFreeRtpWorld(uuid);
-                    if (world.getName().equals(allowedWorld)) {
-                        // Free RTP available
-                        dataManager.setUsedFreeRtp(uuid, true);
-                        target.sendMessage(msg.msg("free-rtp-used"));
-                        // Skip economy payment
-                    } else {
-                        // Player is in a different world than allowedWorld
-                        // Redirect to "world" with fixed range 1500
-                        target.sendMessage(msg.format("free-rtp-wrong-world",
-                                new String[][]{{"%world%", allowedWorld}}));
-                        target.sendMessage("§eTe estamos teletransportando a \"world\" (rango fijo 1500)...");
-
-                        World defaultWorld = Bukkit.getWorld("world");
-                        if (defaultWorld != null) {
-                            gc.grivyzom.center.CenterService centerService =
-                                    new gc.grivyzom.center.CenterService(plugin);
-                            int[] center = centerService.getCenter(defaultWorld);
-                            int cx = center[0];
-                            int cz = center[1];
-
-                            int min = plugin.getConfig().getInt("min-range");
-                            int fixedRange = 1500;
-                            Location dest = tpService.randomLocation(defaultWorld, cx, cz, min, fixedRange);
-
-                            target.teleport(dest);
-                            String locStr = dest.getBlockX() + ", " + dest.getBlockY() + ", " + dest.getBlockZ();
-                            target.sendMessage(msg.format("teleport-success",
-                                    new String[][]{
-                                            {"%loc%", locStr},
-                                            {"%world%", defaultWorld.getName()}
-                                    }));
-
-                            if (!sender.equals(target)) {
-                                sender.sendMessage(msg.format("teleport-other",
-                                        new String[][]{{"%player%", target.getName()}}));
-                            }
-                        } else {
-                            target.sendMessage("§cError interno: no existe el mundo \"world\".");
-                        }
-
-                        return true;
-                    }
-                } else if (economyService.isEnabled()) {
-                    // Normal economy payment
-                    double distance = range;
-                    economyService.showCostInfo(target, "rtp", distance, globalMax);
-                    if (!economyService.processPayment(target, "rtp", distance, globalMax)) {
-                        return true;
-                    }
-                }
-            }
-
-            // ------- Teletransporte -------
-            int min = plugin.getConfig().getInt("min-range");
-
-            // Usar CenterService para obtener el centro del mundo específico
-            gc.grivyzom.center.CenterService centerService = new gc.grivyzom.center.CenterService(plugin);
-            int[] center = centerService.getCenter(world);
+            // ------- Obtener centro del mundo -------
+            int[] center = getCenterForWorld(world);
             int cx = center[0];
             int cz = center[1];
 
-            Location dest = tpService.randomLocation(world, cx, cz, min, range);
+            // ------- Buscar ubicación segura -------
+            int min = plugin.getConfig().getInt("min-range");
+            Location dest = tpService.findSafeRandomLocation(world, cx, cz, min, range);
+
+            if (dest == null) {
+                // No se encontró ubicación segura
+                int maxAttempts = plugin.getConfig().getInt("teleport.max-attempts", 50);
+                sender.sendMessage(msg.format("teleport-failed",
+                        new String[][]{{"%attempts%", String.valueOf(maxAttempts)}}));
+                return true;
+            }
+
+            // ------- Teletransporte -------
             target.teleport(dest);
 
             String locStr = dest.getBlockX()+", "+dest.getBlockY()+", "+dest.getBlockZ();
@@ -227,16 +168,19 @@ public class RTPCommand implements CommandExecutor {
                             {"%max%", String.valueOf(globalMax)}}));
         return r;
     }
+
     private Player getPlayer(String name){
         Player p = Bukkit.getPlayerExact(name);
         if(p==null) throw new IllegalArgumentException("jugador");
         return p;
     }
+
     private World getWorld(String name){
         World w = Bukkit.getWorld(name);
         if(w==null) throw new IllegalArgumentException("mundo");
         return w;
     }
+
     private boolean isWorldAllowed(World w){
         var cfg = plugin.getConfig();
         String mode = cfg.getString("worlds.mode","blacklist").toLowerCase();
@@ -244,4 +188,32 @@ public class RTPCommand implements CommandExecutor {
         boolean contains = list.stream().anyMatch(s -> s.equalsIgnoreCase(w.getName()));
         return mode.equals("whitelist") ? contains : !contains;
     }
-}
+
+    /**
+     * Obtiene el centro configurado para un mundo específico
+     */
+    private int[] getCenterForWorld(World world) {
+        FileConfiguration cfg = plugin.getConfig();
+        String path = "centers." + world.getName() + ".";
+
+        if (cfg.contains(path + "x") && cfg.contains(path + "z")) {
+            return new int[]{
+                    cfg.getInt(path + "x"),
+                    cfg.getInt(path + "z")
+            };
+        }
+
+        // Usar centro global si no hay específico para el mundo
+        return new int[]{
+                cfg.getInt("center-x", 0),
+                cfg.getInt("center-z", 0)
+        };
+    }
+
+    /**
+     * Recarga la configuración del servicio de teletransporte
+     */
+    public void reloadConfig() {
+        tpService.reloadConfig();
+    }
+    }

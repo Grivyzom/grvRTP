@@ -1,38 +1,49 @@
 package gc.grivyzom;
 
 import gc.grivyzom.center.CenterService;
-import gc.grivyzom.commands.HelpCommand;
-import gc.grivyzom.commands.SetCenterCommand;
+import gc.grivyzom.commands.*;
+import gc.grivyzom.economy.EconomyService;
+import gc.grivyzom.rtp.PlayerRTPDataManager;
 import gc.grivyzom.util.MessageUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import gc.grivyzom.commands.RTPCommand;
-import gc.grivyzom.commands.CenterCommand;
 
 public class GrvRTP extends JavaPlugin {
-    private RTPCommand rtpCommand;
+    private int minRange, maxRange, centerX, centerZ;
+    private EconomyService economyService;
+    public PlayerRTPDataManager playerRTPDataManager;
+    private boolean isFreeRTPEnabled; // Nueva variable
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
 
-        CenterService centerService = new CenterService(this);
-        MessageUtil   msgUtil       = new MessageUtil(getConfig());
-        HelpCommand   helpCommand   = new HelpCommand(msgUtil);
+        // Cargar configuración de free-rtp
+        isFreeRTPEnabled = getConfig().getBoolean("free-rtp.enabled", true);
 
-        //  Registro de comandos
-        this.rtpCommand = new RTPCommand(this, centerService);
-        getCommand("rtp").setExecutor(rtpCommand);
-        getCommand("centro").setExecutor(new CenterCommand(this, centerService));
+        CenterService centerService = new CenterService(this);
+        MessageUtil msgUtil = new MessageUtil(getConfig());
+        HelpCommand helpCommand = new HelpCommand(msgUtil);
+        playerRTPDataManager = new PlayerRTPDataManager(this.getDataFolder());
+        economyService = new EconomyService(this, msgUtil);
+
+        // Registro de comandos
+        getCommand("rtp").setExecutor(new RTPCommand(this, economyService));
+        getCommand("centro").setExecutor(new CenterCommand(this, centerService, economyService));
         getCommand("setcenter").setExecutor(new SetCenterCommand(centerService, msgUtil));
         getCommand("grvrtp").setExecutor(new GrvRTPCommand(helpCommand));
+        getCommand("rtpgratis").setExecutor(new FreeRTPCommand(this, playerRTPDataManager, msgUtil)); // Pasar el plugin como parámetro
 
         getLogger().info("GrvRTP habilitado.");
-        getLogger().info("Sistema de bloques prohibidos configurado con " +
-                getConfig().getStringList("teleport.banned-blocks").size() + " materiales.");
+        getLogger().info("Free RTP: " + (isFreeRTPEnabled ? "Activado" : "Desactivado"));
+    }
+
+    // Getter para el estado de free-rtp
+    public boolean isFreeRTPEnabled() {
+        return isFreeRTPEnabled;
     }
 
     @Override
@@ -75,48 +86,17 @@ public class GrvRTP extends JavaPlugin {
                 }
 
                 reloadConfig();
-
-                // Recargar también la configuración del servicio de teleporte
-                if (rtpCommand != null) {
-                    rtpCommand.reloadTeleportService();
-                }
+                // Recargar también el sistema de economía
+                economyService.reload();
 
                 sender.sendMessage("§aConfiguración de GrvRTP recargada exitosamente.");
-                sender.sendMessage("§7Bloques prohibidos actualizados: " +
-                        getConfig().getStringList("teleport.banned-blocks").size() + " materiales.");
-                return true;
-            }
 
-            // Comando para listar bloques prohibidos (nuevo)
-            if (args[0].equalsIgnoreCase("blocks")) {
-                if (!sender.hasPermission("grvrtp.admin")) {
-                    sender.sendMessage("§cNo tienes permiso para ver esta información.");
-                    return true;
-                }
-
-                var bannedBlocks = getConfig().getStringList("teleport.banned-blocks");
-                sender.sendMessage("§6§l▬▬▬ Bloques Prohibidos (" + bannedBlocks.size() + ") ▬▬▬");
-
-                if (bannedBlocks.isEmpty()) {
-                    sender.sendMessage("§7No hay bloques prohibidos configurados.");
+                // Informar sobre el estado de la economía
+                if (economyService.isEnabled()) {
+                    sender.sendMessage("§aSistema de economía: §aActivado");
                 } else {
-                    StringBuilder blocks = new StringBuilder("§e");
-                    for (int i = 0; i < bannedBlocks.size(); i++) {
-                        blocks.append(bannedBlocks.get(i));
-                        if (i < bannedBlocks.size() - 1) {
-                            blocks.append("§7, §e");
-                        }
-                        // Crear nueva línea cada 6 bloques para mejor legibilidad
-                        if ((i + 1) % 6 == 0 && i < bannedBlocks.size() - 1) {
-                            sender.sendMessage(blocks.toString());
-                            blocks = new StringBuilder("§e");
-                        }
-                    }
-                    if (blocks.length() > 2) {
-                        sender.sendMessage(blocks.toString());
-                    }
+                    sender.sendMessage("§aSistema de economía: §cDesactivado");
                 }
-                sender.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
                 return true;
             }
 
@@ -124,5 +104,10 @@ public class GrvRTP extends JavaPlugin {
             sender.sendMessage("§cComando desconocido. Usa §e/grvrtp help §cpara ver los comandos disponibles.");
             return true;
         }
+    }
+
+    // Getter para el servicio de economía (por si otros componentes lo necesitan)
+    public EconomyService getEconomyService() {
+        return economyService;
     }
 }
