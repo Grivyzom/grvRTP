@@ -17,7 +17,7 @@ public class RTPCommand implements CommandExecutor {
     private final GrvRTP plugin;
     private final MessageUtil msg;
     private final EconomyService economyService;
-    private final RandomTeleportService tpService = new RandomTeleportService();
+    private final RandomTeleportService tpService;
     private final int globalMin;
     private final int globalMax;
 
@@ -28,6 +28,9 @@ public class RTPCommand implements CommandExecutor {
         this.globalMin = Math.max(cfg.getInt("min-range",150), 1);
         this.globalMax = Math.max(cfg.getInt("max-range",20000), globalMin+1);
         this.msg = new MessageUtil(cfg);
+
+        // Inicializar el servicio de teletransporte con la configuración
+        this.tpService = new RandomTeleportService(cfg);
     }
 
     @Override
@@ -138,7 +141,19 @@ public class RTPCommand implements CommandExecutor {
 
                             int min = plugin.getConfig().getInt("min-range");
                             int fixedRange = 1500;
+
+                            // Mostrar mensaje de búsqueda si la seguridad está activada
+                            if (plugin.getConfig().getBoolean("teleport.safety.enabled", true)) {
+                                target.sendMessage(msg.msg("teleport-searching"));
+                            }
+
                             Location dest = tpService.randomLocation(defaultWorld, cx, cz, min, fixedRange);
+
+                            // Verificar si la ubicación es segura
+                            if (!tpService.isSafeLocation(dest)) {
+                                target.sendMessage(msg.msg("teleport-unsafe"));
+                                return true;
+                            }
 
                             target.teleport(dest);
                             String locStr = dest.getBlockX() + ", " + dest.getBlockY() + ", " + dest.getBlockZ();
@@ -177,7 +192,20 @@ public class RTPCommand implements CommandExecutor {
             int cx = center[0];
             int cz = center[1];
 
+            // Mostrar mensaje de búsqueda si la seguridad está activada
+            boolean safetyEnabled = plugin.getConfig().getBoolean("teleport.safety.enabled", true);
+            if (safetyEnabled) {
+                target.sendMessage(msg.msg("teleport-searching"));
+            }
+
             Location dest = tpService.randomLocation(world, cx, cz, min, range);
+
+            // Verificar si la ubicación final es segura
+            if (safetyEnabled && !tpService.isSafeLocation(dest)) {
+                target.sendMessage(msg.msg("teleport-unsafe"));
+                return true;
+            }
+
             target.teleport(dest);
 
             String locStr = dest.getBlockX()+", "+dest.getBlockY()+", "+dest.getBlockZ();

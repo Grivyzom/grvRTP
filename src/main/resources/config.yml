@@ -29,6 +29,76 @@ free-rtp:
   min-z: -1000
   max-z: 1000
 
+# ===============================================
+#            SISTEMA DE SEGURIDAD RTP
+# ===============================================
+teleport:
+  safety:
+    # Activar verificaciones de seguridad
+    enabled: true
+
+    # Número máximo de intentos para encontrar una ubicación segura
+    max-attempts: 50
+
+    # Radio máximo para buscar ubicación segura alternativa
+    safe-search-radius: 10
+
+    # Verificar que los bloques circundantes también sean seguros
+    check-surrounding: true
+
+    # Evitar cuevas (ubicaciones sin cielo abierto)
+    avoid-caves: true
+
+    # Nivel mínimo de luz (-1 para desactivar)
+    min-light-level: 7
+
+  # Altura mínima y máxima para teletransporte
+  min-y: 64
+  max-y: 256
+
+# Lista de bloques donde NO se puede aparecer
+# El jugador no aparecerá sobre estos bloques ni en ellos
+banned-blocks:
+  - WATER
+  - LAVA
+  - CACTUS
+  - MAGMA_BLOCK
+  - CAMPFIRE
+  - SOUL_CAMPFIRE
+  - FIRE
+  - SOUL_FIRE
+  - SWEET_BERRY_BUSH
+  - WITHER_ROSE
+  - POINTED_DRIPSTONE
+  - POWDER_SNOW
+  - COBWEB
+  - BEDROCK
+  - BARRIER
+  - VOID_AIR
+  - CAVE_AIR
+  - END_PORTAL
+  - NETHER_PORTAL
+  - STRUCTURE_VOID
+  - SCULK_SENSOR
+  - SCULK_SHRIEKER
+
+# Lista de bloques seguros donde SÍ se puede aparecer (opcional)
+# Si esta lista no está vacía, solo se permitirá aparecer en estos bloques
+safe-blocks:
+  - GRASS_BLOCK
+  - DIRT
+  - STONE
+  - SAND
+  - GRAVEL
+  - COBBLESTONE
+  - OAK_LOG
+  - BIRCH_LOG
+  - SPRUCE_LOG
+  - JUNGLE_LOG
+  - ACACIA_LOG
+  - DARK_OAK_LOG
+  - CHERRY_LOG
+  - MANGROVE_LOG
 
 # ===============================================
 #            SISTEMA DE ECONOMÍA
@@ -120,6 +190,8 @@ messages:
   # Mensajes de teletransporte
   teleport-success: "&aTeletransportado a &f%loc% &aen &f%world%"
   teleport-other: "&aEl jugador &f%player% &afue teletransportado."
+  teleport-unsafe: "&cNo se pudo encontrar una ubicación segura. Inténtalo de nuevo."
+  teleport-searching: "&eEncontrando ubicación segura..."
 
   # Mensajes de centro
   center-success: "&aTeletransportado al centro de &f%world% &a(&f%loc%&a)."

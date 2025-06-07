@@ -4,6 +4,7 @@ import gc.grivyzom.center.CenterService;
 import gc.grivyzom.commands.*;
 import gc.grivyzom.economy.EconomyService;
 import gc.grivyzom.rtp.PlayerRTPDataManager;
+import gc.grivyzom.teleport.RandomTeleportService;
 import gc.grivyzom.util.MessageUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -16,6 +17,7 @@ public class GrvRTP extends JavaPlugin {
     private EconomyService economyService;
     public PlayerRTPDataManager playerRTPDataManager;
     private boolean isFreeRTPEnabled; // Nueva variable
+    private RandomTeleportService teleportService; // Servicio de teletransporte
 
     @Override
     public void onEnable() {
@@ -30,6 +32,9 @@ public class GrvRTP extends JavaPlugin {
         playerRTPDataManager = new PlayerRTPDataManager(this.getDataFolder());
         economyService = new EconomyService(this, msgUtil);
 
+        // Inicializar el servicio de teletransporte con la configuración
+        teleportService = new RandomTeleportService(getConfig());
+
         // Registro de comandos
         getCommand("rtp").setExecutor(new RTPCommand(this, economyService));
         getCommand("centro").setExecutor(new CenterCommand(this, centerService, economyService));
@@ -39,11 +44,17 @@ public class GrvRTP extends JavaPlugin {
 
         getLogger().info("GrvRTP habilitado.");
         getLogger().info("Free RTP: " + (isFreeRTPEnabled ? "Activado" : "Desactivado"));
+        getLogger().info("Sistema de seguridad RTP: " + (getConfig().getBoolean("teleport.safety.enabled", true) ? "Activado" : "Desactivado"));
     }
 
     // Getter para el estado de free-rtp
     public boolean isFreeRTPEnabled() {
         return isFreeRTPEnabled;
+    }
+
+    // Getter para el servicio de teletransporte
+    public RandomTeleportService getTeleportService() {
+        return teleportService;
     }
 
     @Override
@@ -78,6 +89,14 @@ public class GrvRTP extends JavaPlugin {
                 return true;
             }
 
+            // Comando safety
+            if (args[0].equalsIgnoreCase("safety")) {
+                SafetyCommand safetyCommand = new SafetyCommand(GrvRTP.this, new MessageUtil(getConfig()));
+                String[] safetyArgs = new String[args.length - 1];
+                System.arraycopy(args, 1, safetyArgs, 0, safetyArgs.length);
+                return safetyCommand.onCommand(sender, cmd, label, safetyArgs);
+            }
+
             // Comando reload (mantener funcionalidad original)
             if (args[0].equalsIgnoreCase("reload")) {
                 if (!sender.hasPermission("grvrtp.admin")) {
@@ -89,6 +108,12 @@ public class GrvRTP extends JavaPlugin {
                 // Recargar también el sistema de economía
                 economyService.reload();
 
+                // Recargar el servicio de teletransporte con la nueva configuración
+                teleportService = new RandomTeleportService(getConfig());
+
+                // Actualizar configuración de free-rtp
+                isFreeRTPEnabled = getConfig().getBoolean("free-rtp.enabled", true);
+
                 sender.sendMessage("§aConfiguración de GrvRTP recargada exitosamente.");
 
                 // Informar sobre el estado de la economía
@@ -97,6 +122,14 @@ public class GrvRTP extends JavaPlugin {
                 } else {
                     sender.sendMessage("§aSistema de economía: §cDesactivado");
                 }
+
+                // Informar sobre el estado del sistema de seguridad
+                boolean safetyEnabled = getConfig().getBoolean("teleport.safety.enabled", true);
+                sender.sendMessage("§aSistema de seguridad RTP: " + (safetyEnabled ? "§aActivado" : "§cDesactivado"));
+
+                // Informar sobre el estado de Free RTP
+                sender.sendMessage("§aFree RTP: " + (isFreeRTPEnabled ? "§aActivado" : "§cDesactivado"));
+
                 return true;
             }
 
