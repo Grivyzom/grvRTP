@@ -1,4 +1,4 @@
-package gc.grivyzom.economy;
+package gc.grivyzom.util;
 
 import gc.grivyzom.util.MessageUtil;
 import net.milkbowl.vault.economy.Economy;
