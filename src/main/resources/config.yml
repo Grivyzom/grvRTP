@@ -1,32 +1,188 @@
+# ===============================================
+#              CONFIGURACIÓN GrvRTP
+# ===============================================
+
+# Rango mínimo y máximo para teletransporte aleatorio
 min-range: 150
 max-range: 20000
+
+# Centro global por defecto (se usa si no hay centro específico por mundo)
 center-x: 0
 center-z: 0
 
+# ----- Centros por mundo (se llena automáticamente con /setcenter) -----
+centers: {}
+# Ejemplo de estructura que se genera automáticamente:
+# centers:
+#   world:
+#     x: 100
+#     z: -200
+#   world_nether:
+#     x: 0
+#     z: 0
 
-# ----- Centros por mundo (se llena automáticamente) -----
-centers: {}      #  <nombreMundo>:
-                 #    x: <int>
-                 #    z: <int>
+# ===============================================
+#              RTP GRATIS
+# ===============================================
+free-rtp:
+  enabled: true
+  world: "world"
+  min-x: -1000
+  max-x: 1000
+  min-z: -1000
+  max-z: 1000
 
-# ------------------ Mundos -----------------
+# ===============================================
+#     CONFIGURACIÓN DEL SISTEMA DE TELEPORTE
+# ===============================================
+teleport:
+  # Número máximo de intentos para encontrar una ubicación segura
+  max-attempts: 20
+
+  # Altura mínima y máxima para el teletransporte
+  min-y: 64
+  max-y: 256
+
+  # Lista de bloques donde NO se puede aparecer
+  # El jugador no aparecerá sobre estos bloques ni en ellos
+  banned-blocks:
+    - WATER
+    - LAVA
+    - CACTUS
+    - MAGMA_BLOCK
+    - CAMPFIRE
+    - SOUL_CAMPFIRE
+    - FIRE
+    - SOUL_FIRE
+    - SWEET_BERRY_BUSH
+    - WITHER_ROSE
+    - POINTED_DRIPSTONE
+    - POWDER_SNOW
+    - COBWEB
+    - BEDROCK
+    - BARRIER
+    - VOID_AIR
+    - CAVE_AIR
+    - END_PORTAL
+    - NETHER_PORTAL
+    - STRUCTURE_VOID
+
+# ===============================================
+#            SISTEMA DE ECONOMÍA
+# ===============================================
+economy:
+  # Activar/desactivar el sistema de economía
+  enabled: true
+
+  # Configuración de costes por comando
+  commands:
+    # Comando /rtp
+    rtp:
+      # Tipo de moneda: 'money', 'experience', o 'both'
+      currency-type: experience
+
+      # Configuración para dinero (requiere Vault + plugin de economía)
+      money:
+        min-cost: 10.0   # Coste mínimo en dinero
+        max-cost: 100.0  # Coste máximo en dinero
+
+      # Configuración para experiencia
+      experience:
+        min-cost: 5      # Coste mínimo en niveles de XP
+        max-cost: 30     # Coste máximo en niveles de XP
+
+    # Comando /centro
+    center:
+      # Tipo de moneda: 'money', 'experience', o 'both'
+      currency-type: experience
+
+      # Configuración para dinero
+      money:
+        min-cost: 5.0    # Coste mínimo para ir al centro
+        max-cost: 50.0   # Coste máximo (desde muy lejos)
+
+      # Configuración para experiencia
+      experience:
+        min-cost: 2      # Coste mínimo en niveles de XP
+        max-cost: 15     # Coste máximo en niveles de XP
+
+  # TIPOS DE MONEDA DISPONIBLES:
+  # - money: Solo usa dinero (requiere Vault + plugin de economía)
+  # - experience: Solo usa niveles de experiencia
+  # - both: Requiere tanto dinero como experiencia
+  #
+  # FÓRMULA DE CÁLCULO:
+  # coste = min-cost + (distancia / max-range) * (max-cost - min-cost)
+  #
+  # Ejemplos con configuración actual de RTP (currency-type: money):
+  # - Distancia 0: $10.00
+  # - Distancia 10000 (50% del max-range): $55.00
+  # - Distancia 20000 (100% del max-range): $100.00
+  #
+  # Ejemplos con configuración actual de CENTER (currency-type: experience):
+  # - Distancia 0: 2 niveles XP
+  # - Distancia 10000: 8-9 niveles XP
+  # - Distancia 20000: 15 niveles XP
+
+# ===============================================
+#            RESTRICCIONES DE MUNDOS
+# ===============================================
 worlds:
-  mode: blacklist   # o 'whitelist'
+  # Modo de restricción: 'blacklist' o 'whitelist'
+  mode: blacklist
+
+  # Lista de mundos afectados por la restricción
   list:
     - world_the_end
     - world_nether
 
-# ------------------ Mensajes ---------------
+  # Si mode = 'blacklist': NO se puede usar RTP en estos mundos
+  # Si mode = 'whitelist': SOLO se puede usar RTP en estos mundos
+
+# ===============================================
+#                  MENSAJES
+# ===============================================
 messages:
+  # Mensajes de permisos
   no-permission: "&cNo tienes permiso para usar este comando."
   no-permission-others: "&cNo puedes teletransportar a otros jugadores."
   player-only: "&cSolo un jugador puede ejecutar este comando."
+
+  # Mensajes de uso y errores
   usage: "&cUso: /rtp [jugador] <rango> [mundo]"
   invalid-arg: "&cArgumento inválido: %arg%"
   range-error: "&cEl rango debe ser un número entre %min% y %max%."
   world-restricted: "&cNo puedes usar RTP en el mundo &f%world%."
+
+  # Mensajes de teletransporte
   teleport-success: "&aTeletransportado a &f%loc% &aen &f%world%"
   teleport-other: "&aEl jugador &f%player% &afue teletransportado."
-  center-success: "&aTeletransportado al centro de &f%world%."
+  teleport-failed: "&cNo se pudo encontrar una ubicación segura después de %attempts% intentos."
+
+  # Mensajes de centro
+  center-success: "&aTeletransportado al centro de &f%world% &a(&f%loc%&a)."
   center-other: "&aEl jugador &f%player% &afue enviado al centro de &f%world%."
   setcenter-success: "&aCentro de &f%world% &aestablecido en &f%loc%."
+
+  # Mensajes de economía - DINERO
+  econ-insufficient-money: "&cNecesitas &f$%amount% &cpara usar este comando."
+  econ-charged-money: "&aSe te han descontado &f$%amount%&a."
+  econ-cost-info-money: "&eEste comando costará &f$%amount%&e."
+
+  # Mensajes de economía - EXPERIENCIA
+  econ-insufficient-exp: "&cNecesitas &f%amount% niveles de XP &cpara usar este comando."
+  econ-charged-exp: "&aSe te han descontado &f%amount% niveles de XP&a."
+  econ-cost-info-exp: "&eEste comando costará &f%amount% niveles de XP&e."
+
+  # Mensajes de economía - AMBOS
+  econ-charged-both: "&aSe te han descontado &f$%money% &ay &f%exp% niveles de XP&a."
+  econ-cost-info-both: "&eEste comando costará &f$%money% &ey &f%exp% niveles de XP&e."
+
+  # Mensajes de RTP gratis
+  free-rtp-used: "¡Has usado tu RTP gratis!"
+  free-rtp-wrong-world: "No puedes usar el RTP gratis en este mundo. Mundo permitido: %world%"
+  free-rtp-enabled: "&aHas activado tu RTP gratis."
+  free-rtp-disabled: "&aHas desactivado tu RTP gratis."
+  free-rtp-setworld-usage: "&cUso: /rtpgratis setworld <mundo>"
+  free-rtp-world-set: "&aEl mundo permitido para RTP gratis es ahora &f%world%&a."
+  free-rtp-info: "&eEstado RTP gratis:\n&e- Estado: %status%\n&e- Uso: %used%\n&e- Mundo: &f%world%"

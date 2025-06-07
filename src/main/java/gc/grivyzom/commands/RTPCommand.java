@@ -1,6 +1,7 @@
 package gc.grivyzom.commands;
 
 import gc.grivyzom.GrvRTP;
+import gc.grivyzom.center.CenterService;
 import gc.grivyzom.teleport.RandomTeleportService;
 import gc.grivyzom.util.MessageUtil;
 import org.bukkit.*;
@@ -13,17 +14,20 @@ public class RTPCommand implements CommandExecutor {
 
     private final GrvRTP plugin;
     private final MessageUtil msg;
-    private final RandomTeleportService tpService = new RandomTeleportService();
+    private final RandomTeleportService tpService;
+    private final CenterService centerService;
     private final int globalMin;
     private final int globalMax;
 
-    public RTPCommand(GrvRTP plugin){
+    public RTPCommand(GrvRTP plugin, CenterService centerService){
         this.plugin = plugin;
+        this.centerService = centerService;
         FileConfiguration cfg = plugin.getConfig();
         // Usa 150-20000 si están ausentes
         this.globalMin = Math.max(cfg.getInt("min-range",150), 1);
         this.globalMax = Math.max(cfg.getInt("max-range",20000), globalMin+1);
         this.msg = new MessageUtil(cfg);
+        this.tpService = new RandomTeleportService(cfg);
     }
 
     @Override
@@ -100,12 +104,23 @@ public class RTPCommand implements CommandExecutor {
                 return true;
             }
 
+            // ------- Obtener centro del mundo -------
+            int[] center = centerService.getCenter(world);
+            int cx = center[0];
+            int cz = center[1];
+
             // ------- Teletransporte -------
-            int min = plugin.getConfig().getInt("min-range");
-            int cx  = plugin.getConfig().getInt("center-x");
-            int cz  = plugin.getConfig().getInt("center-z");
+            int min = Math.max(plugin.getConfig().getInt("min-range", 150), 1);
 
             Location dest = tpService.randomLocation(world, cx, cz, min, range);
+
+            if (dest == null) {
+                int maxAttempts = plugin.getConfig().getInt("teleport.max-attempts", 20);
+                sender.sendMessage(msg.format("teleport-failed",
+                        new String[][]{{"%attempts%", String.valueOf(maxAttempts)}}));
+                return true;
+            }
+
             target.teleport(dest);
 
             String locStr = dest.getBlockX()+", "+dest.getBlockY()+", "+dest.getBlockZ();
@@ -122,6 +137,11 @@ public class RTPCommand implements CommandExecutor {
             sender.sendMessage(msg.format("invalid-arg", new String[][]{{"%arg%", ex.getMessage()}}));
             return true;
         }
+    }
+
+    // Método para recargar la configuración del servicio de teleporte
+    public void reloadTeleportService() {
+        tpService.reloadConfig(plugin.getConfig());
     }
 
     // -------------- Utilidades privadas --------------
